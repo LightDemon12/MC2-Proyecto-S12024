@@ -7,6 +7,8 @@ import re
 class MainView:
     def __init__(self, master):
         self.master = master
+        self.vertex_list = []
+        self.edge_list = []
         master.title("Proyecto de Grafos")
         master.geometry("1200x720")
 
@@ -81,31 +83,62 @@ class MainView:
     def clear_edge_entry(self, event):
         self.edge_entry.delete(0, tk.END)
 
+    def clear_vertex(self):
+        self.vertex_entry.delete(0, tk.END)
+
+    def clear_edge(self):
+        self.edge_entry.delete(0, tk.END)
+
     def add_vertex(self):
         vertex = self.vertex_entry.get()
         if vertex == "" or vertex == self.default_vertex_message:
             messagebox.showerror("Error", "Por favor, ingrese un vértice.")
+        elif vertex.lower() + "\n" in self.vertex_text.get("1.0", tk.END).lower():
+            messagebox.showerror("Error", "El vértice ya existe.")
         else:
-            self.vertex_text.insert(tk.END, f"Vértice agregado: {vertex}\n")
+            self.vertex_text.insert(tk.END, f"{vertex}\n")
+            self.clear_vertex()
+            self.clear_edge()
+
 
     def add_edge(self):
         edge = self.edge_entry.get()
         if edge == "" or edge == self.default_edge_message or not self.edge_pattern.match(edge):
             messagebox.showerror("Error", "Por favor, ingrese una arista en formato A--B.")
         else:
-            self.edge_text.insert(tk.END, f"Arista agregada: {edge}\n")
+            vertex1, vertex2 = edge.split("--")
+            vertex_text = self.vertex_text.get("1.0", tk.END).lower()
+            edge_text = self.edge_text.get("1.0", tk.END).lower()
+            if vertex1.lower() + "\n" not in vertex_text or vertex2.lower() + "\n" not in vertex_text:
+                messagebox.showerror("Error", "Uno o ambos vértices de la arista no existen.")
+            elif edge.lower() + "\n" in edge_text or f"{vertex2.lower()}--{vertex1.lower()}\n" in edge_text:
+                messagebox.showerror("Error", "La arista ya existe.")
+            else:
+                self.edge_text.insert(tk.END, f"{edge}\n")
+                self.clear_vertex()
+                self.clear_edge()
+
 
     def generate_graph(self):
-        vertex = self.vertex_entry.get()
-        edge = self.edge_entry.get()
+        vertex_text = self.vertex_text.get("1.0", tk.END)
+        edge_text = self.edge_text.get("1.0", tk.END)
+        self.vertex_list = [line for line in vertex_text.splitlines() if line.strip() != ""]
+        self.edge_list = [line for line in edge_text.splitlines() if line.strip() != ""]
+
         # Aquí puedes llamar a tus funciones para generar el grafo y aplicar los algoritmos
-        print("Vértice: ", vertex)
-        print("Arista: ", edge)
+        print("Vértices: ", self.vertex_list)
+        print("Aristas: ", self.edge_list)
 
     def run_algorithm1(self):
-        # Aquí puedes llamar a tu primer algoritmo
+        self.clear_text_areas()
         print("Ejecutando algoritmo de búsqueda en anchura")
 
     def run_algorithm2(self):
-        # Aquí puedes llamar a tu segundo algoritmo
+        self.clear_text_areas()
         print("Ejecutando algoritmo de búsqueda en profundidad")
+
+    def clear_text_areas(self):
+        self.vertex_text.delete("1.0", tk.END)
+        self.edge_text.delete("1.0", tk.END)
+
+
