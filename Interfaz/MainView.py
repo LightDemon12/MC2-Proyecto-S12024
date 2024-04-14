@@ -3,6 +3,9 @@ from tkinter import messagebox
 from PIL import ImageTk, Image
 import itertools
 import re
+from Logica.GRAFO import generate_graph
+import threading
+from Logica.DFS import edges_to_graph, DFS, generate_graph_with_path, run_DFS
 
 class MainView:
     def __init__(self, master):
@@ -109,7 +112,9 @@ class MainView:
             vertex1, vertex2 = edge.split("--")
             vertex_text = self.vertex_text.get("1.0", tk.END).lower()
             edge_text = self.edge_text.get("1.0", tk.END).lower()
-            if vertex1.lower() + "\n" not in vertex_text or vertex2.lower() + "\n" not in vertex_text:
+            if vertex1.lower() == vertex2.lower():
+                messagebox.showerror("Error", "Un vértice no puede tener una arista sobre sí mismo.")
+            elif vertex1.lower() + "\n" not in vertex_text or vertex2.lower() + "\n" not in vertex_text:
                 messagebox.showerror("Error", "Uno o ambos vértices de la arista no existen.")
             elif edge.lower() + "\n" in edge_text or f"{vertex2.lower()}--{vertex1.lower()}\n" in edge_text:
                 messagebox.showerror("Error", "La arista ya existe.")
@@ -120,15 +125,14 @@ class MainView:
 
 
     def generate_graph(self):
-        vertex_text = self.vertex_text.get("1.0", tk.END)
         edge_text = self.edge_text.get("1.0", tk.END)
-        self.vertex_list = [line for line in vertex_text.splitlines() if line.strip() != ""]
         self.edge_list = [line for line in edge_text.splitlines() if line.strip() != ""]
 
-        # Aquí puedes llamar a tus funciones para generar el grafo y aplicar los algoritmos
-        print("Vértices: ", self.vertex_list)
-        print("Aristas: ", self.edge_list)
+        # Llamar a la función para generar el grafo en un hilo de fondo
+        threading.Thread(target=generate_graph, args=(self.edge_list,)).start()
 
+        print("Aristas: ", self.edge_list)
+        
     def run_algorithm1(self):
         self.clear_text_areas()
         print("Ejecutando algoritmo de búsqueda en anchura")
@@ -136,6 +140,15 @@ class MainView:
     def run_algorithm2(self):
         self.clear_text_areas()
         print("Ejecutando algoritmo de búsqueda en profundidad")
+
+        vertex_text = self.vertex_text.get("1.0", tk.END)
+        vertex_list = [line for line in vertex_text.splitlines() if line.strip() != ""]
+        vertex_list = sorted(vertex_list)  # Ordenar la lista de vértices
+
+        edge_text = self.edge_text.get("1.0", tk.END)
+        edge_list = [line for line in edge_text.splitlines() if line.strip() != ""]
+
+        run_DFS(vertex_list, edge_list)
 
     def clear_text_areas(self):
         self.vertex_text.delete("1.0", tk.END)
