@@ -1,10 +1,7 @@
 import tkinter as tk
-from Interfaz.MainView import MainView
-
-def main():
-    root = tk.Tk()
-    main_view = MainView(root)
-    root.mainloop()
+from Interfaz.MainView import GrafoVisualizer
 
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    app = GrafoVisualizer(root)
+    root.mainloop()

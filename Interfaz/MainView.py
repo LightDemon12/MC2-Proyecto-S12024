@@ -1,157 +1,97 @@
 import tkinter as tk
-from tkinter import messagebox
-from PIL import ImageTk, Image
-import itertools
+from Logica.Algoritmos import Grafo
+import tkinter.messagebox as messagebox
 import re
-from Logica.GRAFO import generate_graph
-import threading
-from Logica.DFS import edges_to_graph, DFS, generate_graph_with_path, run_DFS
 
-class MainView:
-    def __init__(self, master):
-        self.master = master
-        self.vertex_list = []
-        self.edge_list = []
-        master.title("Proyecto de Grafos")
-        master.geometry("1200x720")
 
-        self.label = tk.Label(master, text="Proyecto de Grafos")
-        self.label.grid(row=0, column=0, columnspan=2)
+class GrafoVisualizer(tk.Frame):
+    def __init__(self, root, *args, **kwargs):
+        tk.Frame.__init__(self, root, *args, **kwargs)
+        self.root = root
+        self.grafo = Grafo(self.root) 
+        self.root.title("Visualizador de Grafos")
+        self.root.geometry("900x600")  # Establecer el tamaño de la ventana
 
-        # Carga las imágenes
-        self.images = [ImageTk.PhotoImage(Image.open(f"Imagenes/{img_name}").resize((600, 360), Image.LANCZOS)) 
-                       for img_name in ["d63e0568a5eaaf1c0b2bdc8d6ccadb04.jpg", "eb3875fb5cab1f7933d5c96fd2b0757c.jpg"]]
-        self.image_panel1 = tk.Label(master, image=self.images[0])
-        self.image_panel1.grid(row=1, column=0)
-        self.image_panel2 = tk.Label(master)
-        self.image_panel2.grid(row=1, column=1)
+        self.label_vertice = tk.Label(self.root, text="Ingrese un vértice:")
+        self.label_vertice.place(relx=0.25, rely=0.3, anchor='center')
 
-        # Inicia el ciclo de cambio de imágenes
-        self.image_cycle = itertools.cycle(self.images)
-        self.change_image()
+        self.textbox_vertice = tk.Entry(self.root)
+        self.textbox_vertice.place(relx=0.25, rely=0.35, anchor='center')
 
-        self.default_vertex_message = "Ingrese el vértice"
-        self.default_edge_message = "Ingrese la arista en formato A--B"
-        self.edge_pattern = re.compile(r"^[A-Za-z0-9]+--[A-Za-z0-9]+$")
+        self.boton_agregar_vertice = tk.Button(self.root, text="Agregar Vértice", command=self.agregar_vertice)
+        self.boton_agregar_vertice.place(relx=0.25, rely=0.4, anchor='center')
 
-        self.vertex_entry = tk.Entry(master)
-        self.vertex_entry.grid(row=2, column=0)
-        self.vertex_entry.insert(0, self.default_vertex_message)
-        self.vertex_entry.bind("<Button-1>", self.clear_vertex_entry)
+        self.label_arista = tk.Label(self.root, text="Ingrese una arista (en formato A--B):")
+        self.label_arista.place(relx=0.75, rely=0.3, anchor='center')
 
-        self.edge_entry = tk.Entry(master, width=50)
-        self.edge_entry.grid(row=2, column=1)
-        self.edge_entry.insert(0, self.default_edge_message)
-        self.edge_entry.bind("<Button-1>", self.clear_edge_entry)
+        self.textbox_arista = tk.Entry(self.root)
+        self.textbox_arista.place(relx=0.75, rely=0.35, anchor='center')
 
-        self.vertex_button = tk.Button(master, text="Agregar vértice", command=self.add_vertex)
-        self.vertex_button.grid(row=3, column=0)
+        self.boton_agregar_arista = tk.Button(self.root, text="Agregar Arista", command=self.agregar_arista)
+        self.boton_agregar_arista.place(relx=0.75, rely=0.4, anchor='center')
 
-        self.edge_button = tk.Button(master, text="Agregar arista", command=self.add_edge)
-        self.edge_button.grid(row=3, column=1)
+        self.label_resultado_vertices = tk.Label(self.root, text="Vértices:")
+        self.label_resultado_vertices.place(relx=0.25, rely=0.5, anchor='center')
 
-        self.vertex_text = tk.Text(master, height=5, width=30)
-        self.vertex_text.grid(row=4, column=0)
+        self.textbox_resultado_vertices = tk.Text(self.root, height=5, width=30)
+        self.textbox_resultado_vertices.place(relx=0.25, rely=0.55, anchor='center')
 
-        self.edge_text = tk.Text(master, height=5, width=30)
-        self.edge_text.grid(row=4, column=1)
+        self.label_resultado_aristas = tk.Label(self.root, text="Aristas:")
+        self.label_resultado_aristas.place(relx=0.75, rely=0.5, anchor='center')
 
-        # Crea un menú ficticio para evitar el menú predeterminado
-        master.option_add('*tearOff', False)
-        menubar = tk.Menu(master)
-        master['menu'] = menubar
-        menu_file = tk.Menu(menubar)
-        menubar.add_cascade(menu=menu_file, label='File')
+        self.textbox_resultado_aristas = tk.Text(self.root, height=5, width=30)
+        self.textbox_resultado_aristas.place(relx=0.75, rely=0.55, anchor='center')
 
-        # Crea la barra de menú
-        self.menu = tk.Menu(master)
-        master.config(menu=self.menu)
+        self.boton_visualizar_grafo = tk.Button(self.root, text="Visualizar Grafo", command=self.visualizar_grafo)
+        self.boton_visualizar_grafo.place(relx=0.33, rely=0.7, anchor='center')
 
-        # Crea el menú de algoritmos
-        self.algorithm_menu = tk.Menu(self.menu)
-        self.menu.add_cascade(label="Algoritmos", menu=self.algorithm_menu)
-        self.algorithm_menu.add_command(label="Generar Grafo", command=self.generate_graph)
-        self.algorithm_menu.add_command(label="Algoritmo de búsqueda en anchura", command=self.run_algorithm1)
-        self.algorithm_menu.add_command(label="Algoritmo de búsqueda en profundidad", command=self.run_algorithm2)
+        self.boton_algoritmo_anchura = tk.Button(self.root, text="Algoritmo en Anchura", command=self.grafo.ejecutar_anchura)
+        self.boton_algoritmo_anchura.place(relx=0.5, rely=0.7, anchor='center')
 
-    def change_image(self):
-        # Cambia la imagen en el panel derecho
-        self.image_panel2.config(image=next(self.image_cycle))
-        # Programa el próximo cambio de imagen
-        self.master.after(2000, self.change_image)
+        self.boton_algoritmo_profundidad = tk.Button(self.root, text="Algoritmo en Profundidad", command=self.grafo.ejecutar_profundidad)
+        self.boton_algoritmo_profundidad.place(relx=0.67, rely=0.7, anchor='center')
 
-    def clear_vertex_entry(self, event):
-        self.vertex_entry.delete(0, tk.END)
-
-    def clear_edge_entry(self, event):
-        self.edge_entry.delete(0, tk.END)
-
-    def clear_vertex(self):
-        self.vertex_entry.delete(0, tk.END)
-
-    def clear_edge(self):
-        self.edge_entry.delete(0, tk.END)
-
-    def add_vertex(self):
-        vertex = self.vertex_entry.get()
-        if vertex == "" or vertex == self.default_vertex_message:
-            messagebox.showerror("Error", "Por favor, ingrese un vértice.")
-        elif vertex.lower() + "\n" in self.vertex_text.get("1.0", tk.END).lower():
+    def agregar_vertice(self):
+        vertice = self.textbox_vertice.get().lower()  # Convertir a minúsculas
+        if not vertice:  # Si el cuadro de texto está vacío
+            messagebox.showerror("Error", "El cuadro de texto está vacío.")
+            return
+        if vertice in self.grafo.vertices:  # Si el vértice ya existe
             messagebox.showerror("Error", "El vértice ya existe.")
-        else:
-            self.vertex_text.insert(tk.END, f"{vertex}\n")
-            self.clear_vertex()
-            self.clear_edge()
+            return
+        self.grafo.vertices.append(vertice)
+        self.grafo.grafo.node(vertice)
+        print("Vertices:", self.grafo.vertices)
+        self.textbox_resultado_vertices.insert(tk.END, f"{vertice}\n")
+        self.textbox_vertice.delete(0, tk.END)  # Limpiar el cuadro de texto
 
+    def agregar_arista(self):
+        arista = self.textbox_arista.get()
+        if not arista:  # Si el cuadro de texto está vacío
+            messagebox.showerror("Error", "El cuadro de texto está vacío.")
+            return
+        if not re.match(r"\w+--\w+", arista):  # Si la entrada no sigue la estructura correcta
+            messagebox.showerror("Error", "La entrada no sigue la estructura correcta. (Ejemplo: A--B)")
+            return
+        a, b = arista.split("--")
+        if a.lower() == b.lower():  # Si los elementos de la arista son iguales
+            messagebox.showerror("Error", "Los elementos de la arista deben ser diferentes.")
+            return
+        if a.lower() not in self.grafo.vertices or b.lower() not in self.grafo.vertices:  # Si los elementos de la arista no existen en los vértices
+            messagebox.showerror("Error", "Los elementos de la arista deben existir en los vértices.")
+            return
+        if {a.lower(), b.lower()} in [set(x.split("--")) for x in self.grafo.aristas]:  # Si la arista ya existe en cualquier orden
+            messagebox.showerror("Error", "La arista ya existe.")
+            return
+        self.grafo.aristas.append(arista)
+        self.grafo.grafo.edge(a, b)
+        print("Aristas:", self.grafo.aristas)
+        self.textbox_resultado_aristas.insert(tk.END, f"{arista}\n")
+        self.textbox_arista.delete(0, tk.END)  # Limpiar el cuadro de texto
 
-    def add_edge(self):
-        edge = self.edge_entry.get()
-        if edge == "" or edge == self.default_edge_message or not self.edge_pattern.match(edge):
-            messagebox.showerror("Error", "Por favor, ingrese una arista en formato A--B.")
-        else:
-            vertex1, vertex2 = edge.split("--")
-            vertex_text = self.vertex_text.get("1.0", tk.END).lower()
-            edge_text = self.edge_text.get("1.0", tk.END).lower()
-            if vertex1.lower() == vertex2.lower():
-                messagebox.showerror("Error", "Un vértice no puede tener una arista sobre sí mismo.")
-            elif vertex1.lower() + "\n" not in vertex_text or vertex2.lower() + "\n" not in vertex_text:
-                messagebox.showerror("Error", "Uno o ambos vértices de la arista no existen.")
-            elif edge.lower() + "\n" in edge_text or f"{vertex2.lower()}--{vertex1.lower()}\n" in edge_text:
-                messagebox.showerror("Error", "La arista ya existe.")
-            else:
-                self.edge_text.insert(tk.END, f"{edge}\n")
-                self.clear_vertex()
-                self.clear_edge()
-
-
-    def generate_graph(self):
-        edge_text = self.edge_text.get("1.0", tk.END)
-        self.edge_list = [line for line in edge_text.splitlines() if line.strip() != ""]
-
-        # Llamar a la función para generar el grafo en un hilo de fondo
-        threading.Thread(target=generate_graph, args=(self.edge_list,)).start()
-
-        print("Aristas: ", self.edge_list)
-        
-    def run_algorithm1(self):
-        self.clear_text_areas()
-        print("Ejecutando algoritmo de búsqueda en anchura")
-
-    def run_algorithm2(self):
-        self.clear_text_areas()
-        print("Ejecutando algoritmo de búsqueda en profundidad")
-
-        vertex_text = self.vertex_text.get("1.0", tk.END)
-        vertex_list = [line for line in vertex_text.splitlines() if line.strip() != ""]
-        vertex_list = sorted(vertex_list)  # Ordenar la lista de vértices
-
-        edge_text = self.edge_text.get("1.0", tk.END)
-        edge_list = [line for line in edge_text.splitlines() if line.strip() != ""]
-
-        run_DFS(vertex_list, edge_list)
-
-    def clear_text_areas(self):
-        self.vertex_text.delete("1.0", tk.END)
-        self.edge_text.delete("1.0", tk.END)
-
-
+    def visualizar_grafo(self):
+        if not self.grafo.vertices and not self.grafo.aristas:  # Si el grafo está vacío
+            messagebox.showerror("Error", "El grafo está vacío.")
+            return
+        self.grafo.grafo.render('/Imagenes/grafo', format='png', view=False)
+        self.grafo.show_image('/Imagenes/grafo.png', True)
